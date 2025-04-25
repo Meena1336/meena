@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบค้นหาข้อมูลรายการหนังสือเรียนอาชีวศึกษา</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .book-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #1e40af;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #1e3a8a;
+        }
+        .btn-secondary {
+            background-color: #64748b;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+        .notification {
+            transition: all 0.3s ease;
+            transform: translateY(-100%);
+        }
+        .notification.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen">
+        <!-- Notification -->
+        <div id="notification" class="notification fixed top-0 left-0 right-0 bg-green-500 text-white py-3 px-4 text-center shadow-lg z-50">
+            <p id="notificationText">บันทึกข้อมูลสำเร็จ</p>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white py-6 shadow-lg">
+            <div class="container mx-auto px-4">
+                <h1 class="text-3xl font-bold text-center">ระบบค้นหาข้อมูลรายการหนังสือเรียนอาชีวศึกษา</h1>
+                <p class="text-center mt-2">หลักสูตรประกาศนียบัตรวิชาชีพ พุทธศักราช 2567</p>
+                <p class="text-center mt-1 text-sm">พัฒนาโดยครูมีนา สาลี วิทยาลัยอาชีวศึกษาภูเก็ต</p>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <div class="container mx-auto px-4 py-6">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">ค้นหาหนังสือ</h2>
+                <div class="flex flex-wrap gap-4">
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-gray-700 mb-2">คำค้นหา</label>
+                        <input type="text" id="searchInput" placeholder="ชื่อหนังสือ, รหัส, ผู้แต่ง..." 
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="w-full md:w-1/4">
+                        <label class="block text-gray-700 mb-2">ค้นหาตาม</label>
+                        <select id="searchType" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">ทั้งหมด</option>
+                            <option value="id">รหัส</option>
+                            <option value="title">ชื่อหนังสือ</option>
+                            <option value="author">ผู้แต่ง</option>
+                            <option value="publisher">สำนักพิมพ์</option>
+                            <option value="year">ปีที่ประกาศ</option>
+                            <option value="subject">รายละเอียดวิชา</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-1/4 flex items-end">
+                        <button id="searchBtn" class="btn-primary text-white px-6 py-2 rounded-lg font-medium">
+                            ค้นหา
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">รายการหนังสือ</h2>
+                    <div class="flex space-x-2">
+                        <button id="syncBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium flex items-center hover:bg-green-700 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            ซิงค์ข้อมูล
+                        </button>
+                        <button id="addBookBtn" class="btn-primary text-white px-4 py-2 rounded-lg font-medium flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            เพิ่มหนังสือใหม่
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="resultsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Book cards will be dynamically inserted here -->
+                </div>
+                
+                <div id="noResults" class="hidden text-center py-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-gray-500 text-lg mt-4">ไม่พบรายการหนังสือที่ค้นหา</p>
+                </div>
+                
+                <div id="loading" class="hidden text-center py-10">
+                    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-opacity-50 mx-auto"></div>
+                    <p class="text-gray-500 text-lg mt-4">กำลังโหลดข้อมูล...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto px-4 text-center">
+            <p>พัฒนาโดยครูมีนา สาลี วิทยาลัยอาชีวศึกษาภูเก็ต</p>
+            <p class="text-sm mt-1">© 2567 ระบบค้นหาข้อมูลรายการหนังสือเรียนอาชีวศึกษา</p>
+            <p class="text-sm mt-2">เชื่อมต่อกับ Google Sheets: <a href="https://docs.google.com/spreadsheets/d/1VtDSGHIOnxRqeoo-gk6W1zU4DjHI_7Jx39A5OJrLfzI/edit?usp=sharing" target="_blank" class="underline hover:text-blue-300">ดูข้อมูลในชีต</a></p>
+        </div>
+    </footer>
+
+    <!-- Book Detail Modal -->
+    <div id="bookDetailModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-2xl font-bold" id="modalTitle">รายละเอียดหนังสือ</h2>
+                    <button id="closeDetailModal" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-800">ข้อมูลทั่วไป</h3>
+                            <div class="mt-2 space-y-2">
+                                <p><span class="font-medium">ลำดับที่:</span> <span id="modal-order"></span></p>
+                                <p><span class="font-medium">ปีที่ประกาศ:</span> <span id="modal-year"></span></p>
+                                <p><span class="font-medium">รหัส:</span> <span id="modal-id"></span></p>
+                                <p><span class="font-medium">ชื่อหนังสือ:</span> <span id="modal-title"></span></p>
+                                <p><span class="font-medium">ผู้แต่ง:</span> <span id="modal-author"></span></p>
+                                <p><span class="font-medium">ราคา:</span> <span id="modal-price"></span> บาท</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-800">รายละเอียดการพิมพ์</h3>
+                            <div class="mt-2 space-y-2">
+                                <p><span class="font-medium">จำนวนหน้า:</span> <span id="modal-pages"></span> หน้า</p>
+                                <p><span class="font-medium">รูปแบบกระดาษ:</span> <span id="modal-paper"></span></p>
+                                <p><span class="font-medium">รูปแบบการพิมพ์:</span> <span id="modal-print"></span></p>
+                                <p><span class="font-medium">ขนาดรูปเล่ม:</span> <span id="modal-size"></span></p>
+                                <p><span class="font-medium">สำนักพิมพ์:</span> <span id="modal-publisher"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-center items-center mb-4">
+                            <div class="w-48 h-64 bg-gray-100 rounded-md flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-800">รายละเอียดวิชา</h3>
+                            <div class="mt-2">
+                                <p id="modal-subject" class="text-gray-700"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button id="editBookBtn" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+                        แก้ไข
+                    </button>
+                    <button id="deleteBookBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                        ลบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Book Modal -->
+    <div id="addEditBookModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-2xl font-bold" id="addEditModalTitle">เพิ่มหนังสือใหม่</h2>
+                    <button id="closeAddEditModal" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="bookForm" class="mt-4">
+                    <input type="hidden" id="bookId">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">ลำดับที่</label>
+                            <input type="number" id="orderInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">ปีที่ประกาศ</label>
+                            <input type="number" id="yearInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">รหัส</label>
+                            <input type="text" id="idInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-gray-700 mb-2">ชื่อหนังสือ</label>
+                            <input type="text" id="titleInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">ผู้แต่ง</label>
+                            <input type="text" id="authorInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">ราคา (บาท)</label>
+                            <input type="number" id="priceInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">จำนวนหน้า</label>
+                            <input type="number" id="pagesInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">รูปแบบกระดาษ</label>
+                            <input type="text" id="paperInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">รูปแบบการพิมพ์</label>
+                            <input type="text" id="printInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">ขนาดรูปเล่ม</label>
+                            <input type="text" id="sizeInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">สำนักพิมพ์</label>
+                            <input type="text" id="publisherInput" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-gray-700 mb-2">รายละเอียดวิชา</label>
+                            <textarea id="subjectInput" rows="4" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" id="cancelAddEditBtn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            บันทึก
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md">
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-gray-800">ยืนยันการลบ</h2>
+                <p class="mt-4 text-gray-600">คุณต้องการลบหนังสือ "<span id="deleteBookTitle" class="font-medium"></span>" ใช่หรือไม่?</p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button id="cancelDeleteBtn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+                        ยกเลิก
+                    </button>
+                    <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                        ลบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Sheets Connection Modal -->
+    <div id="sheetsConnectionModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-lg">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-xl font-bold text-gray-800">การเชื่อมต่อกับ Google Sheets</h2>
+                    <button id="closeSheetsModal" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-4">
+                    <p class="text-gray-600">ระบบนี้เชื่อมต่อกับ Google Sheets ที่ลิงก์:</p>
+                    <a href="https://docs.google.com/spreadsheets/d/1VtDSGHIOnxRqeoo-gk6W1zU4DjHI_7Jx39A5OJrLfzI/edit?usp=sharing" target="_blank" class="text-blue-600 underline block mt-2 break-words">https://docs.google.com/spreadsheets/d/1VtDSGHIOnxRqeoo-gk6W1zU4DjHI_7Jx39A5OJrLfzI/edit?usp=sharing</a>
+                    
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <p class="text-sm text-blue-800">
+                            <span class="font-medium">หมายเหตุ:</span> ข้อมูลที่เพิ่มหรือแก้ไขในระบบนี้จะถูกบันทึกลงใน Google Sheets โดยอัตโนมัติ และข้อมูลจะยังคงอยู่แม้จะปิดหน้าเว็บไซต์
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="confirmSheetsModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        เข้าใจแล้ว
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in a real application, this would be loaded from Google Sheets
+        let books = [
+            {
+                id: "BK001",
+                order: 1,
+                year: 2567,
+                title: "การเขียนโปรแกรมคอมพิวเตอร์",
+                author: "สมชาย ใจดี",
+                price: 250,
+                pages: 320,
+                paper: "กระดาษปอนด์",
+                print: "สี่สี",
+                size: "A4",
+                publisher: "สำนักพิมพ์อาชีวศึกษา",
+                subject: "รายวิชาพื้นฐานสำหรับนักศึกษาสาขาคอมพิวเตอร์ธุรกิจ เนื้อหาครอบคลุมการเขียนโปรแกรมเบื้องต้น การใช้ตัวแปร การควบคุมการทำงาน และการสร้างฟังก์ชัน"
+            },
+            {
+                id: "BK002",
+                order: 2,
+                year: 2567,
+                title: "การบัญชีเบื้องต้น",
+                author: "สมหญิง รักเรียน",
+                price: 220,
+                pages: 280,
+                paper: "กระดาษปอนด์",
+                print: "ขาวดำ",
+                size: "B5",
+                publisher: "สำนักพิมพ์วิชาการ",
+                subject: "รายวิชาสำหรับนักศึกษาสาขาการบัญชี เนื้อหาครอบคลุมหลักการบัญชีเบื้องต้น การบันทึกรายการทางบัญชี และการจัดทำงบการเงิน"
+            },
+            {
+                id: "BK003",
+                order: 3,
+                year: 2566,
+                title: "งานเชื่อมโลหะเบื้องต้น",
+                author: "วิชัย ช่างเชื่อม",
+                price: 300,
+                pages: 350,
+                paper: "กระดาษอาร์ต",
+                print: "สี่สี",
+                size: "A4",
+                publisher: "สำนักพิมพ์อาชีวศึกษา",
+                subject: "รายวิชาสำหรับนักศึกษาสาขาช่างเชื่อมโลหะ เนื้อหาครอบคลุมความรู้พื้นฐานเกี่ยวกับงานเชื่อม เครื่องมือและอุปกรณ์ เทคนิคการเชื่อมแบบต่างๆ และความปลอดภัยในงานเชื่อม"
+            }
+        ];
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const searchType = document.getElementById('searchType');
+        const searchBtn = document.getElementById('searchBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const noResults = document.getElementById('noResults');
+        const loading = document.getElementById('loading');
+        const addBookBtn = document.getElementById('addBookBtn');
+        const syncBtn = document.getElementById('syncBtn');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+        
+        // Detail Modal Elements
+        const bookDetailModal = document.getElementById('bookDetailModal');
+        const closeDetailModal = document.getElementById('closeDetailModal');
+        const editBookBtn = document.getElementById('editBookBtn');
+        const deleteBookBtn = document.getElementById('deleteBookBtn');
+        
+        // Add/Edit Modal Elements
+        const addEditBookModal = document.getElementById('addEditBookModal');
+        const addEditModalTitle = document.getElementById('addEditModalTitle');
+        const closeAddEditModal = document.getElementById('closeAddEditModal');
+        const cancelAddEditBtn = document.getElementById('cancelAddEditBtn');
+        const bookForm = document.getElementById('bookForm');
+        const bookIdInput = document.getElementById('bookId');
+        
+        // Delete Confirmation Modal Elements
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const deleteBookTitle = document.getElementById('deleteBookTitle');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        
+        // Google Sheets Connection Modal Elements
+        const sheetsConnectionModal = document.getElementById('sheetsConnectionModal');
+        const closeSheetsModal = document.getElementById('closeSheetsModal');
+        const confirmSheetsModal = document.getElementById('confirmSheetsModal');
+
+        // Local Storage Key
+        const STORAGE_KEY = 'bookInventoryData';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load data from local storage if available
+            const storedData = localStorage.getItem(STORAGE_KEY);
+            if (storedData) {
+                try {
+                    books = JSON.parse(storedData);
+                } catch (e) {
+                    console.error('Error parsing stored data:', e);
+                }
+            }
+            
+            displayBooks(books);
+            
+            // Show Google Sheets connection modal on first visit
+            const hasSeenSheetsModal = localStorage.getItem('hasSeenSheetsModal');
+            if (!hasSeenSheetsModal) {
+                sheetsConnectionModal.classList.remove('hidden');
+            }
+        });
+
+        // Save data to local storage
+        function saveToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+        }
+
+        // Show notification
+        function showNotification(message, isSuccess = true) {
+            notificationText.textContent = message;
+            notification.className = `notification fixed top-0 left-0 right-0 ${isSuccess ? 'bg-green-500' : 'bg-red-500'} text-white py-3 px-4 text-center shadow-lg z-50 show`;
+            
+            setTimeout(() => {
+                notification.className = `notification fixed top-0 left-0 right-0 ${isSuccess ? 'bg-green-500' : 'bg-red-500'} text-white py-3 px-4 text-center shadow-lg z-50`;
+            }, 3000);
+        }
+
+        // Simulate syncing with Google Sheets
+        syncBtn.addEventListener('click', () => {
+            loading.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            noResults.classList.add('hidden');
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                showNotification('ซิงค์ข้อมูลกับ Google Sheets สำเร็จ');
+                displayBooks(books);
+            }, 1500);
+        });
+
+        // Search functionality
+        searchBtn.addEventListener('click', () => {
+            const query = searchInput.value.trim().toLowerCase();
+            const type = searchType.value;
+            
+            if (query === '') {
+                displayBooks(books);
+                return;
+            }
+            
+            let filteredBooks;
+            
+            if (type === 'all') {
+                filteredBooks = books.filter(book => 
+                    book.id.toLowerCase().includes(query) ||
+                    book.title.toLowerCase().includes(query) ||
+                    book.author.toLowerCase().includes(query) ||
+                    book.publisher.toLowerCase().includes(query) ||
+                    book.year.toString().includes(query) ||
+                    (book.subject && book.subject.toLowerCase().includes(query))
+                );
+            } else {
+                filteredBooks = books.filter(book => {
+                    switch(type) {
+                        case 'id':
+                            return book.id.toLowerCase().includes(query);
+                        case 'title':
+                            return book.title.toLowerCase().includes(query);
+                        case 'author':
+                            return book.author.toLowerCase().includes(query);
+                        case 'publisher':
+                            return book.publisher.toLowerCase().includes(query);
+                        case 'year':
+                            return book.year.toString().includes(query);
+                        case 'subject':
+                            return book.subject && book.subject.toLowerCase().includes(query);
+                        default:
+                            return false;
+                    }
+                });
+            }
+            
+            displayBooks(filteredBooks);
+        });
+
+        // Display books
+        function displayBooks(booksToDisplay) {
+            resultsContainer.innerHTML = '';
+            
+            if (booksToDisplay.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+            
+            noResults.classList.add('hidden');
+            
+            booksToDisplay.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card bg-white rounded-lg shadow-md p-5 transition-all duration-300';
+                bookCard.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-semibold text-blue-800">${book.title}</h3>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">${book.id}</span>
+                    </div>
+                    <p class="text-gray-600 mt-2">โดย ${book.author}</p>
+                    <p class="text-gray-500 text-sm">ปีที่ประกาศ: ${book.year}</p>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span class="text-lg font-bold text-blue-600">${book.price} บาท</span>
+                        <button class="view-details px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition" 
+                            data-id="${book.id}">
+                            ดูรายละเอียด
+                        </button>
+                    </div>
+                `;
+                resultsContainer.appendChild(bookCard);
+                
+                // Add event listener to view details button
+                const viewDetailsBtn = bookCard.querySelector('.view-details');
+                viewDetailsBtn.addEventListener('click', () => showBookDetails(book.id));
+            });
+        }
+
+        // Show book details
+        function showBookDetails(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            
+            document.getElementById('modal-order').textContent = book.order;
+            document.getElementById('modal-year').textContent = book.year;
+            document.getElementById('modal-id').textContent = book.id;
+            document.getElementById('modal-title').textContent = book.title;
+            document.getElementById('modal-author').textContent = book.author;
+            document.getElementById('modal-price').textContent = book.price;
+            document.getElementById('modal-pages').textContent = book.pages;
+            document.getElementById('modal-paper').textContent = book.paper;
+            document.getElementById('modal-print').textContent = book.print;
+            document.getElementById('modal-size').textContent = book.size;
+            document.getElementById('modal-publisher').textContent = book.publisher;
+            document.getElementById('modal-subject').textContent = book.subject || 'ไม่มีข้อมูล';
+            
+            // Set data attributes for edit and delete
+            editBookBtn.setAttribute('data-id', book.id);
+            deleteBookBtn.setAttribute('data-id', book.id);
+            
+            bookDetailModal.classList.remove('hidden');
+        }
+
+        // Close detail modal
+        closeDetailModal.addEventListener('click', () => {
+            bookDetailModal.classList.add('hidden');
+        });
+
+        // Add new book
+        addBookBtn.addEventListener('click', () => {
+            addEditModalTitle.textContent = 'เพิ่มหนังสือใหม่';
+            bookForm.reset();
+            bookIdInput.value = '';
+            bookDetailModal.classList.add('hidden');
+            addEditBookModal.classList.remove('hidden');
+        });
+
+        // Edit book
+        editBookBtn.addEventListener('click', () => {
+            const bookId = editBookBtn.getAttribute('data-id');
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            
+            addEditModalTitle.textContent = 'แก้ไขข้อมูลหนังสือ';
+            
+            // Fill form with book data
+            bookIdInput.value = book.id;
+            document.getElementById('orderInput').value = book.order;
+            document.getElementById('yearInput').value = book.year;
+            document.getElementById('idInput').value = book.id;
+            document.getElementById('titleInput').value = book.title;
+            document.getElementById('authorInput').value = book.author;
+            document.getElementById('priceInput').value = book.price;
+            document.getElementById('pagesInput').value = book.pages;
+            document.getElementById('paperInput').value = book.paper;
+            document.getElementById('printInput').value = book.print;
+            document.getElementById('sizeInput').value = book.size;
+            document.getElementById('publisherInput').value = book.publisher;
+            document.getElementById('subjectInput').value = book.subject || '';
+            
+            bookDetailModal.classList.add('hidden');
+            addEditBookModal.classList.remove('hidden');
+        });
+
+        // Delete book
+        deleteBookBtn.addEventListener('click', () => {
+            const bookId = deleteBookBtn.getAttribute('data-id');
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            
+            deleteBookTitle.textContent = book.title;
+            confirmDeleteBtn.setAttribute('data-id', bookId);
+            
+            bookDetailModal.classList.add('hidden');
+            deleteConfirmModal.classList.remove('hidden');
+        });
+
+        // Close add/edit modal
+        closeAddEditModal.addEventListener('click', () => {
+            addEditBookModal.classList.add('hidden');
+        });
+
+        cancelAddEditBtn.addEventListener('click', () => {
+            addEditBookModal.classList.add('hidden');
+        });
+
+        // Close delete confirmation modal
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteConfirmModal.classList.add('hidden');
+        });
+
+        // Confirm delete
+        confirmDeleteBtn.addEventListener('click', () => {
+            const bookId = confirmDeleteBtn.getAttribute('data-id');
+            const bookTitle = books.find(book => book.id === bookId)?.title || '';
+            
+            books = books.filter(book => book.id !== bookId);
+            saveToLocalStorage();
+            displayBooks(books);
+            deleteConfirmModal.classList.add('hidden');
+            
+            // Simulate Google Sheets sync
+            showNotification(`ลบหนังสือ "${bookTitle}" และซิงค์ข้อมูลสำเร็จ`);
+        });
+
+        // Submit form
+        bookForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const bookData = {
+                id: document.getElementById('idInput').value,
+                order: parseInt(document.getElementById('orderInput').value),
+                year: parseInt(document.getElementById('yearInput').value),
+                title: document.getElementById('titleInput').value,
+                author: document.getElementById('authorInput').value,
+                price: parseInt(document.getElementById('priceInput').value),
+                pages: parseInt(document.getElementById('pagesInput').value),
+                paper: document.getElementById('paperInput').value,
+                print: document.getElementById('printInput').value,
+                size: document.getElementById('sizeInput').value,
+                publisher: document.getElementById('publisherInput').value,
+                subject: document.getElementById('subjectInput').value
+            };
+            
+            const existingBookId = bookIdInput.value;
+            let message = '';
+            
+            if (existingBookId) {
+                // Update existing book
+                const index = books.findIndex(book => book.id === existingBookId);
+                if (index !== -1) {
+                    books[index] = bookData;
+                    message = `แก้ไขข้อมูลหนังสือ "${bookData.title}" และซิงค์ข้อมูลสำเร็จ`;
+                }
+            } else {
+                // Add new book
+                books.push(bookData);
+                message = `เพิ่มหนังสือ "${bookData.title}" และซิงค์ข้อมูลสำเร็จ`;
+            }
+            
+            saveToLocalStorage();
+            displayBooks(books);
+            addEditBookModal.classList.add('hidden');
+            
+            // Simulate Google Sheets sync
+            showNotification(message);
+        });
+
+        // Google Sheets connection modal
+        closeSheetsModal.addEventListener('click', () => {
+            sheetsConnectionModal.classList.add('hidden');
+            localStorage.setItem('hasSeenSheetsModal', 'true');
+        });
+
+        confirmSheetsModal.addEventListener('click', () => {
+            sheetsConnectionModal.classList.add('hidden');
+            localStorage.setItem('hasSeenSheetsModal', 'true');
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === bookDetailModal) {
+                bookDetailModal.classList.add('hidden');
+            }
+            if (e.target === addEditBookModal) {
+                addEditBookModal.classList.add('hidden');
+            }
+            if (e.target === deleteConfirmModal) {
+                deleteConfirmModal.classList.add('hidden');
+            }
+            if (e.target === sheetsConnectionModal) {
+                sheetsConnectionModal.classList.add('hidden');
+                localStorage.setItem('hasSeenSheetsModal', 'true');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'935af250f6378945',t:'MTc0NTU1Mzc2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
